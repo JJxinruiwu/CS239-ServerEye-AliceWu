@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.DS_Store
+# runtime state of the simulator and the live tool-call log (copies are saved per trace folder)
+src/lab/state.json
+src/lab/state.json.tmp
+src/lab/state.lock
+src/lab/.rakazo_session.json
+src/traces/raw/
+# submission archives
+dist/
+# Rakazo runtime files if you keep the tutorial stack next to this repo
+.rakazo-runtime/
+# local packaging script (contains student ID)
+package.sh
