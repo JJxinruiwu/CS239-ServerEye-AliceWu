@@ -47,7 +47,7 @@ def bot_profile(agent: AgentProfile, model: ModelConnection, host: str) -> BotPr
         name=agent.name,
         model=model,
         mcp=tuple(mcp_connection(key, host) for key in agent.servers),
-        instructions=instructions_for(agent, messaging="async"),
+        instructions=instructions_for(agent),
     )
 
 

@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from labops.agents.profiles import AGENTS, MESSAGING_SYNC, MONITOR, REPLY_ONLY_SYNC, instructions_for  # noqa: E402
+from labops.agents.profiles import AGENTS, MONITOR, instructions_for  # noqa: E402
 from labops.mcp_servers import SERVERS  # noqa: E402
 from labops.monitor import A2A_PORT, rules  # noqa: E402
 
@@ -92,17 +92,17 @@ def render_tools(tools: dict[str, list]) -> str:
         for t in items:
             lines.append(f"{t.name}: {describe_inputs(t)}; returns {OUTPUTS[t.name]}")
         lines.append("")
-    lines += ["## runtime tool (provided by Rakazo / the local runner, not by an MCP server)", "",
+    lines += ["## runtime tool (provided by Rakazo, not by an MCP server)", "",
               "message_bot: inputs confirm_name (string, the target agent), intent (string: request|question|result|status|fyi), "
-              "text (string); delivers the text to the target agent and returns its reply (local runner: immediately; "
-              "Rakazo: the target's first turn is delivered back later as a new message with intent result).", ""]
+              "text (string); delivers the text to the target agent; the target's first turn is delivered back later "
+              "as a new message with intent result.", ""]
     return "\n".join(lines)
 
 
 def render_agent(agent, tools: dict[str, list]) -> str:
     names = [t.name for key in agent.servers for t in tools[key]]
     peers = list(agent.may_message)
-    async_text = instructions_for(agent, "async")
+    prompt = instructions_for(agent)
     lines = [f"# {agent.name}", "",
              f"**Role:** {agent.role}", "",
              "**Kind:** LLM-based (any tool-calling chat model; recorded episodes used `openai-codex/gpt-6-luna` through Rakazo)", "",
@@ -110,11 +110,8 @@ def render_agent(agent, tools: dict[str, list]) -> str:
              "**Available tools:** " + ", ".join(f"`{n}`" for n in names) + (", `message_bot`" if peers else ""), "",
              "**May message:** " + (", ".join(peers) if peers else "nobody (replies to the agent that asked; Rakazo delivers the reply)"), "",
              "## System prompt (as sent to Rakazo)", "",
-             "Rendered by `labops.agents.profiles.instructions_for(agent, \"async\")`; this is the exact text.", "",
-             "```text", async_text.rstrip(), "```", "",
-             "## Local-runner variant", "",
-             "The local runner (`labops/agents/local_runner.py`) uses the same prompt with the messaging paragraph replaced by:", "",
-             "```text", (MESSAGING_SYNC if peers else REPLY_ONLY_SYNC).strip(), "```", ""]
+             "Rendered by `labops.agents.profiles.instructions_for(agent)`; this is the exact text.", "",
+             "```text", prompt.rstrip(), "```", ""]
     return "\n".join(lines)
 
 

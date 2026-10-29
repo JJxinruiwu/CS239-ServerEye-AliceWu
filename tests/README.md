@@ -1,7 +1,7 @@
 # Tests
 
-Run everything with pytest from the repository root; the MCP smoke test and the
-fake-model run are separate commands because they start servers:
+Run everything with pytest from the repository root; the MCP smoke test is a
+separate command because it starts servers:
 
 ```bash
 pip install -r src/requirements.txt
@@ -83,10 +83,3 @@ Monitor A2A service on 18780 with a throw-away state, discovers the tools over
 MCP, calls each once (including `health_check`, which crosses to Monitor over
 A2A, and one call expected to fail: `lmreread` for an unknown vendor) and checks
 that every call was written to the tool-call log. Prints `PASS` or `FAIL`.
-
-## fake_model.py — plumbing without tokens
-
-A scripted OpenAI-compatible endpoint. With `MODEL_BASE_URL=http://127.0.0.1:18800/v1`
-the local runner exercises the whole pipeline (MCP tools, nested `message_bot`,
-the A2A health check, trace output) with a well-behaved Gatekeeper. It is not a
-policy test.

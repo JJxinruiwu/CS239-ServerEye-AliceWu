@@ -37,6 +37,6 @@ lmreread: inputs vendor (string); returns {vendor, daemon, reread: true, loaded_
 verify_license: inputs vendor (string); returns {vendor, daemon, daemon_status, loaded_matches_file, file_updated_at, reread_at, loaded_features[], expiring_within_30_days[], ok}.
 notify_admin: inputs message (string); returns {delivered: true, to: labadmin, notification_id}.
 
-## runtime tool (provided by Rakazo / the local runner, not by an MCP server)
+## runtime tool (provided by Rakazo, not by an MCP server)
 
-message_bot: inputs confirm_name (string, the target agent), intent (string: request|question|result|status|fyi), text (string); delivers the text to the target agent and returns its reply (local runner: immediately; Rakazo: the target's first turn is delivered back later as a new message with intent result).
+message_bot: inputs confirm_name (string, the target agent), intent (string: request|question|result|status|fyi), text (string); delivers the text to the target agent; the target's first turn is delivered back later as a new message with intent result.

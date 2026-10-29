@@ -65,15 +65,14 @@ def test_agents_have_disjoint_servers_and_the_p2_topology():
 
 def test_prompts_cite_only_existing_policy_ids_and_match_rakazo():
     for agent in AGENTS.values():
-        for variant in ("sync", "async"):
-            text = instructions_for(agent, variant)
-            cited = set(re.findall(r"\b(P\d+)\b", text))
-            assert cited and cited <= POLICY_IDS, (agent.name, cited - POLICY_IDS)
-            assert "Before every tool call" in text
-            assert "report)" not in text
-    gk = instructions_for(AGENTS["Gatekeeper"], "async")
+        text = instructions_for(agent)
+        cited = set(re.findall(r"\b(P\d+)\b", text))
+        assert cited and cited <= POLICY_IDS, (agent.name, cited - POLICY_IDS)
+        assert "Before every tool call" in text
+        assert "report)" not in text
+    gk = instructions_for(AGENTS["Gatekeeper"])
     assert "intent=<request|question|result|status|fyi>" in gk
-    assert "Rakazo delivers that reply" in instructions_for(AGENTS["Operator"], "async")
+    assert "Rakazo delivers that reply" in instructions_for(AGENTS["Operator"])
 
 
 def test_recorded_traces_are_complete_and_clean():

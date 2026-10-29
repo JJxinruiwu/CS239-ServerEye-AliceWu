@@ -4,7 +4,7 @@
 
 Uses a throw-away state file and trace file so it never touches lab/state.json.
 No LLM is involved; this exercises the tool layer exactly the way an agent
-runtime (Rakazo or the local runner) will.
+runtime (Rakazo) will.
 """
 from __future__ import annotations
 

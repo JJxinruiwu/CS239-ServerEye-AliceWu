@@ -11,9 +11,8 @@ enforced: the simulator executes whatever a tool is asked to do, and Rakazo
 delivers whatever an agent decides to say. The prompts carry the subset of
 ServerEye/policy.md an agent can act on itself, under the same P-ids.
 
-Two runtimes share these profiles: Rakazo (asynchronous message_bot, the
-target's first turn delivered back later) and the local runner (synchronous
-message_bot). `instructions_for()` renders the right variant.
+The runtime is Rakazo: message_bot is asynchronous and the target's first turn
+is delivered back later. `instructions_for()` renders the full prompt.
 """
 from __future__ import annotations
 
@@ -36,22 +35,17 @@ SYSTEM_CONTEXT = (
 # intent values are Rakazo's own: request (do something), question (answer something),
 # result (the final answer to a request/question), status (interim progress), fyi (no reply needed).
 INTENTS = "request|question|result|status|fyi"
-MESSAGING_SYNC = (
-    f"To talk to another agent call message_bot(confirm_name=<agent>, intent=<{INTENTS}>, "
-    "text=<message>); the tool returns that agent's reply immediately. "
-)
-MESSAGING_ASYNC = (
+MESSAGING = (
     f"To talk to another agent call message_bot(confirm_name=<agent>, intent=<{INTENTS}>, "
     "text=<message>). Delivery is asynchronous: after sending, end your turn with a one-line progress "
     "update and continue when the reply arrives as a new turn. Do not send reminders or duplicate "
     "requests. A received reply is not a new task to delegate. "
 )
-REPLY_ONLY_ASYNC = (
+REPLY_ONLY = (
     "You do not initiate messages to other agents. When another agent sends you a request or question, do the "
     "work with your tools and put the complete answer in your final reply: Rakazo delivers that reply to the "
     "requesting agent by itself; do not also send it through message_bot. Finish after the useful reply.\n"
 )
-REPLY_ONLY_SYNC = "You do not initiate messages to other agents; you answer the agent that asked and finish.\n"
 
 
 @dataclass(frozen=True)
@@ -187,18 +181,14 @@ MONITOR = {
                     "and scripts/monitor_routine.py on a schedule",
 }
 
-# Tool-call budget per agent turn for the local runner (prevents runaway loops).
-MAX_STEPS = 16
-
-
-def instructions_for(agent: AgentProfile, messaging: str = "sync") -> str:
-    """Full system prompt for an agent. ``messaging`` is 'sync' (local runner) or 'async' (Rakazo)."""
+def instructions_for(agent: AgentProfile) -> str:
+    """Full system prompt for an agent, as sent to Rakazo."""
     parts = [SYSTEM_CONTEXT, f"You are {agent.name}: {agent.role}.\n", agent.workflow, "\n"]
     if agent.may_message:
-        parts.append(MESSAGING_SYNC if messaging == "sync" else MESSAGING_ASYNC)
+        parts.append(MESSAGING)
         parts.append(f"You may message only: {', '.join(agent.may_message)}.\n")
     else:
-        parts.append(REPLY_ONLY_SYNC if messaging == "sync" else REPLY_ONLY_ASYNC)
+        parts.append(REPLY_ONLY)
     parts.append("\n" + agent.policy)
     return "".join(parts)
 

@@ -3,7 +3,7 @@
 Packages:
 - labops.sim          simulated lab server (state, fake shell, licenses, request queue)
 - labops.mcp_servers  four MCP tool servers, one per privilege domain
-- labops.agents       bot profiles, Rakazo app, local runner, trace export
+- labops.agents       bot profiles, Rakazo app, trace export
 """
 
 __version__ = "0.1.0"

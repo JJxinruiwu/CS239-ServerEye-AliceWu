@@ -33,7 +33,7 @@ Keeping it safe is the agents' job.
 labops/sim/            simulated server: state.py, seed.py (vendors, catalog, licenses, students), server.py, scenario.py
 labops/mcp_servers/    portal.py, vendor.py, server.py, license.py, serve.py (launcher: 4 MCP servers + Monitor)
 labops/monitor/        rules.py (Monitor's decision logic), a2a_service.py (A2A server), client.py (A2A client)
-labops/agents/         profiles.py (roles + policies as prompts), rakazo_app.py, rakazo.py, local_runner.py
+labops/agents/         profiles.py (roles + policies as prompts), rakazo_app.py, rakazo.py
 labops/tracing.py      JSONL tool-call logger used by all servers and the Monitor service
 labops/console/        web console: /portal (students), /monitor (admin), /agents (multi-agent timeline)
 scenarios/             five reproducible scenarios (state, request queue, kickoff and admin steps)
@@ -41,7 +41,7 @@ scripts/               run_rakazo_scenario.py, export_rakazo_traces.py, render_d
                        monitor_routine.py, reset_lab.py, submit_request.py, admin.py
 traces/                recorded runs (one folder per scenario)
 lab/                   runtime state of the simulator (state.json, git-ignored)
-../tests/              pytest suite, MCP smoke test, scripted fake model (see ../tests/README.md)
+../tests/              pytest suite and MCP smoke test (see ../tests/README.md)
 ```
 
 ## Setup
@@ -142,24 +142,6 @@ The console reads `lab/state.json`, the tool-call log and `traces/`; for the liv
 signs in to Rakazo once with the credentials from `.env`. It is not an agent and no agent
 can reach it.
 
-## Running locally (no Docker, no Rakazo)
-
-`labops/agents/local_runner.py` is a dependency-light runtime: each agent is a
-tool-calling loop against any OpenAI-compatible endpoint, and `message_bot` runs
-the target agent synchronously and returns its reply. The Monitor service is
-the same A2A process.
-
-```bash
-python -m labops.mcp_servers.serve                                  # terminal 1
-export MODEL_BASE_URL=https://api.openai.com/v1 MODEL_ID=gpt-4.1 MODEL_API_KEY=...   # terminal 2
-python -m labops.agents.local_runner --scenario scenarios/01_compliant_install.json
-```
-
-No tokens handy? `python ../tests/fake_model.py` serves a scripted model
-(`MODEL_BASE_URL=http://127.0.0.1:18800/v1 MODEL_ID=fake`) that exercises the
-whole pipeline with a well-behaved Gatekeeper — useful for checking the plumbing,
-useless for policy evaluation.
-
 ## The admin's side
 
 `scripts/admin.py` is the human admin's console; nothing in it is an agent tool:
@@ -185,6 +167,6 @@ python scripts/render_description.py       # from src/
 
 - An LLM endpoint with tool calling (hosted API, a subscription through Rakazo,
   or a local server such as Ollama); billed to the key or subscription owner.
-- Docker for Rakazo (optional; the local runner needs none).
+- Docker for Rakazo.
 - Nothing else: the EDA server, the license daemons, the request portal, the
   vendor download sites and the admin console are all simulated in `labops/sim`.

@@ -2,9 +2,8 @@
 
 Every tool call is appended as one JSON line to ``traces/raw/tool_calls.jsonl``
 (override with ``LABOPS_TRACE``). This is the *action/observation* half of an
-agentic trace; the *thought/message* half comes from the agent runtime (the
-local runner records it directly, Rakazo threads are exported with
-``scripts/export_rakazo_traces.py``).
+agentic trace; the *thought/message* half comes from the Rakazo threads,
+exported with ``scripts/export_rakazo_traces.py``.
 
 The two halves are joined on timestamps, so keep the clocks of the MCP servers
 and the agent runtime the same (they normally run on the same machine).
