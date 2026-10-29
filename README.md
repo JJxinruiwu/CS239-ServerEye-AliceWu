@@ -1,11 +1,11 @@
-# ServerEye — source
+# ServerEye
 
 Three LLM agents and one rule-based agent administer a simulated EDA lab server:
 Gatekeeper (student requests), Operator (vendor downloads and installs),
 LicenseKeeper (license files and daemons) and Monitor (health checks, rule-based,
-reached over A2A). What the system does and must never do is in `../ServerEye/`
-(`app.md`, `policy.md`, `tools.md`, `agents/`, `episodes/`); this directory is
-the implementation.
+reached over A2A). What the system does and must never do is in `ServerEye/`
+(`app.md`, `policy.md`, `tools.md`, `agents/`, `episodes/`); `src/` is the
+implementation.
 
 ```
  students ──▶ request portal ◀── Gatekeeper ──request──▶ Operator ──▶ vendor sites (lab accounts inside the MCP)
@@ -30,18 +30,18 @@ Keeping it safe is the agents' job.
 ## Layout
 
 ```
-labops/sim/            simulated server: state.py, seed.py (vendors, catalog, licenses, students), server.py, scenario.py
-labops/mcp_servers/    portal.py, vendor.py, server.py, license.py, serve.py (launcher: 4 MCP servers + Monitor)
-labops/monitor/        rules.py (Monitor's decision logic), a2a_service.py (A2A server), client.py (A2A client)
-labops/agents/         profiles.py (roles + policies as prompts), rakazo_app.py, rakazo.py
-labops/tracing.py      JSONL tool-call logger used by all servers and the Monitor service
-labops/console/        web console: /portal (students), /monitor (admin), /agents (multi-agent timeline)
-scenarios/             five reproducible scenarios (state, request queue, kickoff and admin steps)
-scripts/               run_rakazo_scenario.py, export_rakazo_traces.py, render_description.py,
-                       monitor_routine.py, reset_lab.py, submit_request.py, admin.py
-traces/                recorded runs (one folder per scenario)
-lab/                   runtime state of the simulator (state.json, git-ignored)
-../tests/              pytest suite and MCP smoke test (see ../tests/README.md)
+src/labops/sim/           simulated server: state.py, seed.py (vendors, catalog, licenses, students), server.py, scenario.py
+src/labops/mcp_servers/   portal.py, vendor.py, server.py, license.py, serve.py (launcher: 4 MCP servers + Monitor)
+src/labops/monitor/       rules.py (Monitor's decision logic), a2a_service.py (A2A server), client.py (A2A client)
+src/labops/agents/        profiles.py (roles + policies as prompts), rakazo_app.py, rakazo.py
+src/labops/tracing.py     JSONL tool-call logger used by all servers and the Monitor service
+src/labops/console/       web console: /portal (students), /monitor (admin), /agents (multi-agent timeline)
+src/scenarios/            five reproducible scenarios (state, request queue, kickoff and admin steps)
+src/scripts/              run_rakazo_scenario.py, export_rakazo_traces.py, render_description.py,
+                          monitor_routine.py, reset_lab.py, submit_request.py, admin.py
+src/traces/               recorded runs (one folder per scenario)
+src/lab/                  runtime state of the simulator (state.json, git-ignored)
+tests/                    pytest suite and MCP smoke test (see tests/README.md)
 ```
 
 ## Setup
@@ -55,6 +55,8 @@ pip install -r requirements.txt
 python -m pytest ../tests -q          # unit tests (one starts the Monitor service locally)
 python ../tests/smoke_mcp.py          # starts everything on test ports and calls every tool
 ```
+
+All commands below run from `src/`.
 
 No API keys are stored anywhere in the repository. Model and Rakazo credentials
 come from environment variables or from a git-ignored `.env` file in `src/` or
@@ -105,7 +107,7 @@ verdict.
    python scripts/run_rakazo_scenario.py scenarios/01_compliant_install.json
    python scripts/run_rakazo_scenario.py scenarios/05_license_renewal.json
    ```
-   Output: `traces/<scenario>/{trace.md, trace.json, tool_calls.jsonl, final_state.json,
+   Output: `src/traces/<scenario>/{trace.md, trace.json, tool_calls.jsonl, final_state.json,
    scenario.json, runtime.json, rakazo_thread_<Bot>.json}`. Watch the run live in the
    Rakazo UI; inspect the human side with `python scripts/admin.py list` / `inbox`.
 7. **Scheduled Monitor check** (what a cron job would run): `python scripts/monitor_routine.py`.
@@ -138,7 +140,7 @@ Three independent pages (no login; the portal has a "viewing as" student picker 
   Operator or LicenseKeeper on top of the current lab state (no reset): e.g. submit a request
   on /portal, then "process portal queue". "reset lab" and "clear bot threads" start over.
 
-The console reads `lab/state.json`, the tool-call log and `traces/`; for the live view it
+The console reads `src/lab/state.json`, the tool-call log and `src/traces/`; for the live view it
 signs in to Rakazo once with the credentials from `.env`. It is not an agent and no agent
 can reach it.
 
@@ -156,11 +158,11 @@ python scripts/admin.py stop-daemon cdslmd        # simulate an incident for Mon
 
 ## Regenerating the description
 
-`../ServerEye/agents/*.md`, `tools.md` and `episodes/*.md` are generated from the
+`ServerEye/agents/*.md`, `tools.md` and `episodes/*.md` are generated from the
 code and the recorded traces so they cannot drift from the implementation:
 
 ```bash
-python scripts/render_description.py       # from src/
+python scripts/render_description.py
 ```
 
 ## External requirements
@@ -169,4 +171,4 @@ python scripts/render_description.py       # from src/
   or a local server such as Ollama); billed to the key or subscription owner.
 - Docker for Rakazo.
 - Nothing else: the EDA server, the license daemons, the request portal, the
-  vendor download sites and the admin console are all simulated in `labops/sim`.
+  vendor download sites and the admin console are all simulated in `src/labops/sim`.
