@@ -246,7 +246,7 @@ def rebuild(out_dir: Path) -> Path:
         "scenario": scenario or {"name": name},
         "runtime": runtime,
         "agents": {n: {"servers": list(a.servers), "may_message": list(a.may_message),
-                       "instructions": instructions_for(a, "async")} for n, a in AGENTS.items()},
+                       "instructions": instructions_for(a)} for n, a in AGENTS.items()},
         "events": timeline,
     }
     (out_dir / "trace.json").write_text(json.dumps(trace, indent=2, ensure_ascii=False, default=str) + "\n",
