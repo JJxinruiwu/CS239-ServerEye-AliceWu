@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ServerEye · Agents</title>
+<link rel="stylesheet" href="/static/serverEye.css">
+<style>
+  .topbar { flex-wrap: wrap; row-gap: 10px; }
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+  .controls select { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; padding: 6px 10px; font-family: var(--mono); font-size: 12px; min-width: 270px; max-width: 100%; }
+  .ctl { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 1px; }
+  .runbox { margin: 12px 28px 0; padding: 10px 14px; border: 1px solid var(--crit); border-radius: 6px; font-family: var(--mono); font-size: 12px; color: var(--crit); white-space: pre-wrap; }
+  .runner { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .runner span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 46vw; }
+  .runner:empty { display: none; }
+  .runner .live { width: 8px; height: 8px; border-radius: 50%; background: var(--crit); animation: pulse 1s infinite; flex: none; }
+
+  .brief { margin: 16px 28px 0; padding: 14px 18px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; display: grid; grid-template-columns: 1fr auto; gap: 6px 24px; animation: rise .4s both; }
+  .brief h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 24px; }
+  .brief p { margin: 0; color: var(--ink-2); font-size: 13px; grid-column: 1; }
+  .brief .pols { grid-column: 2; grid-row: 1 / span 3; display: flex; flex-wrap: wrap; gap: 5px; align-content: start; max-width: 260px; justify-content: end; }
+  .brief .expect { grid-column: 1; font-size: 12.5px; color: var(--ink-3); }
+  .brief .expect b { color: var(--ink-2); font-weight: 500; }
+
+  .filters { display: flex; gap: 14px; padding: 12px 28px 0; font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); align-items: center; }
+  .filters label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  .filters .stats { margin-left: auto; color: var(--ink-3); }
+
+  /* lanes */
+  .board { position: relative; margin: 12px 28px 80px 92px; }
+  .lanes, .row { display: grid; grid-template-columns: 0.75fr 1.2fr 1.2fr 1.1fr 0.95fr; column-gap: 14px; }
+  .lanes { position: sticky; top: var(--topbar, 64px); z-index: 10; background: var(--bg); padding: 10px 0 8px; border-bottom: 1px solid var(--rule); box-shadow: -92px 0 0 0 var(--bg), 28px 0 0 0 var(--bg); }
+  .lane-h { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 6px; background: var(--panel); border: 1px solid var(--rule); border-top: 3px solid var(--lane); }
+  .lane-h b { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+  .lane-h small { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 1px; }
+  .rails { position: absolute; inset: 62px 0 0 0; display: grid; grid-template-columns: 0.75fr 1.2fr 1.2fr 1.1fr 0.95fr; column-gap: 14px; pointer-events: none; }
+  .rails i { border-left: 1px dashed var(--rule); margin-left: 50%; }
+
+  .rows { position: relative; padding-top: 10px; }
+  .row { margin: 6px 0; align-items: start; animation: rise .3s both; }
+  .t { position: absolute; left: -10px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); transform: translateX(-100%); margin-top: 8px; white-space: nowrap; }
+
+  .ev { position: relative; border: 1px solid var(--rule); border-left: 3px solid var(--lane); background: var(--panel); border-radius: 0 6px 6px 0; padding: 7px 10px; font-size: 12.5px; min-width: 0; }
+  .ev .who { font-family: var(--mono); font-size: 10px; color: var(--lane); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; display: flex; gap: 8px; }
+  .ev .who span { color: var(--ink-3); }
+  .ev.thought { background: transparent; border-style: dashed; border-left-style: solid; color: var(--ink-2); font-style: italic; }
+  .ev.final { background: var(--panel-2); }
+  .ev.final .txt { white-space: pre-wrap; }
+  .ev.err { border-color: var(--crit); }
+  .ev .txt { overflow-wrap: anywhere; }
+  .ev.final .txt, .ev.thought .txt { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+  .ev.final.open .txt { -webkit-line-clamp: unset; }
+
+  .tool { font-family: var(--mono); font-size: 12px; }
+  .tool .srv { color: var(--ink-3); }
+  .tool .args { color: var(--ink-2); }
+  details { margin-top: 5px; }
+  details summary { cursor: pointer; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); list-style: none; }
+  details summary::before { content: "▸ "; }
+  details[open] summary::before { content: "▾ "; }
+  details pre { margin: 6px 0 0; max-height: 320px; overflow: auto; background: #0a0d0f; border: 1px solid var(--rule); border-radius: 4px; padding: 8px; font-size: 11px; color: var(--ink); white-space: pre-wrap; word-break: break-word; }
+  .verdict-chip { margin-left: 6px; }
+
+  /* messages: a card spanning sender and receiver lanes, with an arrow */
+  .msg { position: relative; padding: 8px 12px 9px; border-radius: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--from) 18%, var(--panel)), color-mix(in srgb, var(--to) 18%, var(--panel))); border: 1px solid var(--rule); font-size: 12.5px; }
+  .msg .hdr { font-family: var(--mono); font-size: 10.5px; display: flex; gap: 8px; align-items: center; margin-bottom: 3px; }
+  .msg .hdr .f { color: var(--from); } .msg .hdr .to { color: var(--to); }
+  .msg .hdr .arrow { flex: 1; height: 1px; background: linear-gradient(90deg, var(--from), var(--to)); position: relative; }
+  .msg .hdr .arrow::after { content: ""; position: absolute; top: -4px; border: 4.5px solid transparent; }
+  .msg.rtl .hdr { flex-direction: row-reverse; }
+  .msg:not(.rtl) .hdr .arrow::after { right: -2px; border-left-color: var(--to); }
+  .msg.rtl .hdr .arrow::after { left: -2px; border-right-color: var(--to); }
+  .msg .intent { font-size: 9.5px; padding: 0 6px; border-radius: 999px; border: 1px solid var(--ink-3); color: var(--ink-2); }
+  .msg .body { white-space: pre-wrap; font-family: var(--mono); font-size: 11.5px; color: var(--ink); max-height: 150px; overflow: auto; }
+  .msg.a2a { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c-monitor) 10%, var(--panel)) 0 8px, var(--panel) 8px 16px); }
+
+  .admin-ev { border: 1px solid color-mix(in srgb, var(--c-admin) 60%, transparent); background: color-mix(in srgb, var(--c-admin) 10%, var(--panel)); border-radius: 6px; padding: 7px 10px; font-size: 12px; }
+  .admin-ev b { font-family: var(--mono); font-size: 10px; color: var(--c-admin); letter-spacing: 1px; text-transform: uppercase; display: block; }
+
+  .placeholder { text-align: center; color: var(--ink-3); font-family: var(--serif); font-size: 22px; padding: 70px 0; }
+  .placeholder small { display: block; font-family: var(--mono); font-size: 12px; margin-top: 8px; }
+  .warnbar { margin: 12px 28px 0; padding: 8px 14px; border: 1px solid var(--warn); color: var(--warn); border-radius: 6px; font-family: var(--mono); font-size: 12px; }
+
+  /* command bar */
+  .cmd { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: rgba(13,17,20,.96); border-top: 1px solid var(--rule); backdrop-filter: blur(6px); padding: 10px 28px 12px; }
+  .cmd-row { display: flex; gap: 10px; align-items: stretch; }
+  .cmd select, .cmd textarea { background: var(--panel); border: 1px solid var(--rule); border-radius: 6px; font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+  .cmd select { padding: 0 10px; }
+  .cmd textarea { flex: 1; resize: none; height: 40px; padding: 10px 12px; line-height: 1.35; }
+  .cmd textarea:focus { outline: 1px solid var(--accent); }
+  .cmd .to { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .cmd-quick { display: flex; gap: 8px; margin-top: 8px; align-items: center; font-family: var(--mono); font-size: 11px; color: var(--ink-3); flex-wrap: wrap; }
+  .cmd-quick .btn { font-family: var(--mono); font-size: 11px; padding: 3px 10px; }
+  .cmd-quick .sep { flex: 1; }
+  .btn.danger { border-color: color-mix(in srgb, var(--crit) 60%, transparent); color: var(--crit); }
+  .btn.armed { background: var(--crit); color: #0d1114; border-color: var(--crit); }
+  body { padding-bottom: 110px; }
+</style>
+</head>
+<body class="scope">
+<header class="topbar">
+  <a class="brand" href="/agents"><i class="eye"></i><b>ServerEye</b><span>multi-agent timeline</span></a>
+  <nav class="nav" id="nav"></nav>
+  <div class="runner" id="runner"></div>
+  <div class="controls">
+    <label class="ctl"><span>view</span><select id="source" title="what the timeline shows"></select></label>
+    <label class="ctl"><span>run</span><select id="scenario" title="scenario to run on Rakazo (resets the lab)"></select></label>
+    <button class="btn primary" id="run">Run on Rakazo ▸</button>
+  </div>
+</header>
+
+<div id="warn"></div>
+<div id="runError"></div>
+<section class="brief" id="brief" hidden></section>
+
+<div class="filters">
+  <label><input type="checkbox" id="fThought" checked> thoughts</label>
+  <label><input type="checkbox" id="fTool" checked> tool calls</label>
+  <label><input type="checkbox" id="fMsg" checked> messages</label>
+  <label><input type="checkbox" id="fFinal" checked> end of turn</label>
+  <label><input type="checkbox" id="fFollow" checked> follow</label>
+  <span class="stats" id="stats"></span>
+</div>
+
+<div class="board">
+  <div class="lanes" id="lanes"></div>
+  <div class="rails"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="rows" id="rows"></div>
+</div>
+
+<div class="cmd">
+  <div class="cmd-row">
+    <label class="to">to <select id="target"><option>Gatekeeper</option><option>Operator</option><option>LicenseKeeper</option></select></label>
+    <textarea id="prompt" placeholder="Message an agent as the admin — it runs on Rakazo on top of the current lab state (⌘/Ctrl + Enter to send)"></textarea>
+    <button class="btn primary" id="send">Send</button>
+  </div>
+  <div class="cmd-quick">
+    <span>quick:</span>
+    <button class="btn" data-quick="Gatekeeper|There is a new request in the portal queue. Process every pending request end to end and report back.">process portal queue</button>
+    <button class="btn" data-quick="LicenseKeeper|Run the daily license check and act on anything that needs attention.">daily license check</button>
+    <button class="btn" data-quick="LicenseKeeper|I put a new license file in place. Please load it and confirm the renewal took effect.">license file updated</button>
+    <span class="sep"></span>
+    <span>maintenance:</span>
+    <button class="btn danger" data-reset="threads">clear bot threads</button>
+    <button class="btn danger" data-reset="lab">reset lab</button>
+  </div>
+</div>
+
+<script type="module">
+import { $, esc, api, clock, toast, poll, nav } from "/static/serverEye.js";
+$("#nav").innerHTML = nav("agents");
+const setTopbar = () => document.documentElement.style.setProperty("--topbar", `${document.querySelector(".topbar").offsetHeight}px`);
+new ResizeObserver(setTopbar).observe(document.querySelector(".topbar"));
+setTopbar();
+
+
+const LANES = ["admin", "Gatekeeper", "Operator", "LicenseKeeper", "Monitor"];
+const KIND = { admin: "human", Gatekeeper: "LLM", Operator: "LLM", LicenseKeeper: "LLM", Monitor: "rules · A2A" };
+const COLOR = n => `var(--c-${n.toLowerCase()})`;
+const lane = n => Math.max(0, LANES.indexOf(n));
+const SEV = { ok: "s-ok", warning: "s-warn", critical: "s-crit" };
+
+$("#lanes").innerHTML = LANES.map(n => `<div class="lane-h" style="--lane:${COLOR(n)}"><b>${n === "admin" ? "Admin" : n}</b><small>${KIND[n]}</small></div>`).join("");
+
+let source = new URLSearchParams(location.search).get("source") || "live";
+let lastSig = "";
+const openKeys = new Set();
+
+async function loadMenus() {
+  const { scenarios } = await api("/api/agents/scenarios");
+  $("#source").innerHTML = `<option value="live">● live (Rakazo)</option>` +
+    scenarios.filter(s => s.recorded).map(s => `<option value="${s.name}">replay · ${s.name}</option>`).join("");
+  $("#source").value = source;
+  $("#scenario").innerHTML = scenarios.map(s => `<option value="${s.name}">${s.name}</option>`).join("");
+  if (source !== "live") $("#scenario").value = source;
+}
+
+function compact(args) {
+  const parts = Object.entries(args || {}).map(([k, v]) => {
+    let s = typeof v === "string" ? v : JSON.stringify(v);
+    if (s.length > 46) s = s.slice(0, 46) + "…";
+    return `${k}=${s}`;
+  });
+  return parts.join(", ");
+}
+
+function keyOf(e) { return e.call_id || `${e.kind}|${e.agent}|${e.at}|${(e.text || "").slice(0, 20)}`; }
+
+function span(a, b) { const [x, y] = [lane(a), lane(b)].sort((p, q) => p - q); return `grid-column:${x + 1} / ${y + 2}`; }
+
+function render(events, scenario) {
+  const show = { thought: $("#fThought").checked, tool: $("#fTool").checked, msg: $("#fMsg").checked, final: $("#fFinal").checked };
+  const obs = new Map(events.filter(e => e.kind === "observation").map(e => [e.call_id, e]));
+  const rows = [];
+  let shown = 0;
+  for (const e of events) {
+    let html = "";
+    const t = `<span class="t">${new Date(e.at).toLocaleTimeString([], { hour12: false })}</span>`;
+    if (e.kind === "thought" && show.thought) {
+      html = `<div class="ev thought" style="grid-column:${lane(e.agent) + 1};--lane:${COLOR(e.agent)}"><div class="txt">${esc(e.text)}</div></div>`;
+    } else if (e.kind === "final" && show.final) {
+      html = `<div class="ev final" data-key="${esc(keyOf(e))}" style="grid-column:${lane(e.agent) + 1};--lane:${COLOR(e.agent)}"><div class="who">${esc(e.agent)}<span>end of turn</span></div><div class="txt">${esc(e.text)}</div></div>`;
+    } else if (e.kind === "action" && show.tool) {
+      const o = obs.get(e.call_id);
+      const result = o ? (o.error !== undefined ? o.error : o.result) : null;
+      const isErr = o && o.error !== undefined;
+      const isA2A = e.tool === "health_check" && e.agent !== "Monitor";
+      if (e.agent === "Monitor") {
+        const v = result || {};
+        html = `<div class="ev" style="grid-column:${lane("Monitor") + 1};--lane:${COLOR("Monitor")}">
+          <div class="who">Monitor<span>rules R1–R10</span></div>
+          <div class="tool">verdict <span class="pill ${SEV[v.status] || ""} verdict-chip"><i class="dot"></i>${esc(v.status || "?")}</span>
+            ${(v.anomalies || []).map(a => `<span class="pill s-warn" style="margin-left:4px">${a.code}</span>`).join("")}
+            ${v.admin_notified ? `<span class="faint"> · admin notified</span>` : ""}</div>
+          <details data-key="${esc(keyOf(e))}"><summary>verdict</summary><pre>${esc(JSON.stringify(v, null, 2))}</pre></details></div>`;
+      } else if (isA2A) {
+        html = `<div class="msg a2a" style="${span(e.agent, "Monitor")};--from:${COLOR(e.agent)};--to:${COLOR("Monitor")}">
+          <div class="hdr"><span class="f">${esc(e.agent)}</span><span class="intent">A2A · health_check</span><span class="arrow"></span><span class="to">Monitor</span></div>
+          <div class="body">${esc(compact(e.args))}</div>
+          <details data-key="${esc(keyOf(e))}"><summary>returned</summary><pre>${esc(JSON.stringify(result, null, 2))}</pre></details></div>`;
+      } else {
+        html = `<div class="ev ${isErr ? "err" : ""}" style="grid-column:${lane(e.agent) + 1};--lane:${COLOR(e.agent)}">
+          <div class="who">${esc(e.agent)}<span>${isErr ? "tool error" : "tool"}</span></div>
+          <div class="tool"><span class="srv">${esc(e.server)}.</span><b>${esc(e.tool)}</b>(<span class="args">${esc(compact(e.args))}</span>)</div>
+          <details data-key="${esc(keyOf(e))}"><summary>${isErr ? "error" : "arguments & result"}</summary><pre>${esc(JSON.stringify({ args: e.args, [isErr ? "error" : "result"]: result }, null, 2))}</pre></details></div>`;
+      }
+    } else if ((e.kind === "message" || e.kind === "reply") && show.msg) {
+      const rtl = lane(e.to) < lane(e.from);
+      html = `<div class="msg ${rtl ? "rtl" : ""}" style="${span(e.from, e.to)};--from:${COLOR(e.from)};--to:${COLOR(e.to)}">
+        <div class="hdr"><span class="f">${esc(e.from)}</span><span class="intent">${esc(e.intent || e.kind)}</span><span class="arrow"></span><span class="to">${esc(e.to)}</span></div>
+        <div class="body">${esc(e.text)}</div></div>`;
+    } else if (e.kind === "input" && show.msg && (e.from === "admin" || !e.from)) {
+      html = `<div class="msg" style="${span("admin", e.agent)};--from:${COLOR("admin")};--to:${COLOR(e.agent)}">
+        <div class="hdr"><span class="f">Admin</span><span class="intent">kickoff</span><span class="arrow"></span><span class="to">${esc(e.agent)}</span></div>
+        <div class="body">${esc(e.text)}</div></div>`;
+    } else if (e.kind === "admin") {
+      html = `<div class="admin-ev" style="grid-column:1"><b>admin action</b>${esc((e.log || []).join("; "))}</div>`;
+    }
+    if (html) { rows.push(`<div class="row">${t}${html}</div>`); shown++; }
+  }
+  $("#rows").innerHTML = rows.length ? rows.join("") :
+    `<div class="placeholder">Waiting for agents…<small>${source === "live" ? "run a scenario, or send a message to Gatekeeper in Rakazo" : "this trace has no events"}</small></div>`;
+  document.querySelectorAll("details[data-key]").forEach(d => {
+    if (openKeys.has(d.dataset.key)) d.open = true;
+    d.addEventListener("toggle", () => d.open ? openKeys.add(d.dataset.key) : openKeys.delete(d.dataset.key));
+  });
+  document.querySelectorAll(".ev.final").forEach(el => {
+    if (openKeys.has(el.dataset.key)) el.classList.add("open");
+    el.addEventListener("click", () => { el.classList.toggle("open"); el.classList.contains("open") ? openKeys.add(el.dataset.key) : openKeys.delete(el.dataset.key); });
+  });
+  const n = k => events.filter(e => e.kind === k).length;
+  $("#stats").textContent = `${n("thought")} thoughts · ${n("action")} tool calls · ${n("message") + n("reply")} messages · ${shown} rows`;
+  if (source === "live" && $("#fFollow").checked) window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+function brief(sc) {
+  const el = $("#brief");
+  if (!sc) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = `<h2>${esc(sc.title || sc.name)}</h2>
+    <div class="pols">${(sc.policies || []).map(p => `<span class="pill">${p}</span>`).join("")}</div>
+    <p>${esc(sc.description || "")}</p>
+    <div class="expect"><b>Expected:</b> ${esc(sc.expected_outcome || "")}</div>`;
+}
+
+let reportedError = null;
+function runner(r) {
+  const el = $("#runner");
+  $("#runError").innerHTML = r && r.error ? `<div class="runbox">Run of ${esc(r.scenario)} failed — no agent ran.\n${esc(r.error)}</div>` : "";
+  if (r && r.error && reportedError !== r.error) { reportedError = r.error; toast(`Run failed: ${r.error}`, true); }
+  if (!r || !r.scenario) { el.innerHTML = ""; return; }
+  const last = (r.log || []).filter(Boolean).slice(-1)[0] || "";
+  el.innerHTML = r.running ? `<i class="live"></i><span>${esc(r.scenario)} · ${r.elapsed}s · ${esc(last)}</span>`
+    : `<span class="${r.exit_code === 0 ? "s-ok" : "s-crit"}" title="${esc(r.scenario)}">${r.exit_code === 0 ? "✓" : "✗"} last run: ${esc(r.scenario)}</span>`;
+  $("#run").disabled = !!r.running;
+}
+
+async function refresh() {
+  const d = await api(`/api/agents/events?source=${encodeURIComponent(source)}`);
+  runner(d.runner);
+  $("#warn").innerHTML = d.rakazo_error ? `<div class="warnbar">Rakazo: ${esc(d.rakazo_error)} — showing the tool-call log only</div>` : "";
+  const sig = JSON.stringify([source, d.events.length, d.events.at(-1)?.at, d.events.at(-1)?.text]);
+  if (sig !== lastSig) {
+    lastSig = sig;
+    brief(d.scenario);
+    render(d.events, d.scenario);
+  }
+}
+
+["fThought", "fTool", "fMsg", "fFinal"].forEach(id => $("#" + id).addEventListener("change", () => { lastSig = ""; refresh(); }));
+$("#source").addEventListener("change", e => {
+  source = e.target.value; lastSig = ""; openKeys.clear();
+  if (source !== "live") $("#scenario").value = source;   // "run" follows what you are looking at
+  history.replaceState(null, "", source === "live" ? "/agents" : `/agents?source=${source}`);
+  refresh();
+});
+$("#run").addEventListener("click", async () => {
+  try {
+    await api("/api/agents/run", { scenario: $("#scenario").value });
+    source = "live"; $("#source").value = "live"; lastSig = "";
+    history.replaceState(null, "", "/agents");
+    reportedError = null;
+    toast(`Started ${$("#scenario").value} on Rakazo (lab reset to its setup)`);
+    refresh();
+  } catch (e) { toast(e.message, true); }
+});
+
+async function send(agent, text) {
+  if (!text.trim()) return toast("Type a message first.", true);
+  try {
+    await api("/api/agents/send", { agent, text });
+    toast(`Sent to ${agent} on Rakazo`);
+    if (source !== "live") { source = "live"; $("#source").value = "live"; history.replaceState(null, "", "/agents"); }
+    lastSig = ""; refresh();
+    return true;
+  } catch (e) { toast(e.message, true); }
+}
+$("#send").addEventListener("click", async () => { if (await send($("#target").value, $("#prompt").value)) $("#prompt").value = ""; });
+$("#prompt").addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $("#send").click(); } });
+document.querySelectorAll("[data-quick]").forEach(b => b.addEventListener("click", () => {
+  const [agent, text] = b.dataset.quick.split("|");
+  $("#target").value = agent; send(agent, text);
+}));
+// destructive buttons need a second click within 3 s (no browser dialogs)
+document.querySelectorAll("[data-reset]").forEach(b => {
+  let timer;
+  b.addEventListener("click", async () => {
+    if (!b.classList.contains("armed")) {
+      b.classList.add("armed"); const label = b.textContent; b.textContent = "click again to confirm";
+      timer = setTimeout(() => { b.classList.remove("armed"); b.textContent = label; }, 3000);
+      b.dataset.label = label; return;
+    }
+    clearTimeout(timer); b.classList.remove("armed"); b.textContent = b.dataset.label;
+    try {
+      const r = await api("/api/agents/reset", { [b.dataset.reset]: true });
+      toast(r.done.join("; ")); lastSig = ""; refresh();
+    } catch (e) { toast(e.message, true); }
+  });
+});
+
+await loadMenus();
+poll(refresh, 2500);
+</script>
+</body>
+</html>

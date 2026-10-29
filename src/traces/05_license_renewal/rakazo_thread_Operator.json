@@ -1,0 +1,25 @@
+{
+  "threadId": "cmvszdwc9003g2rrrtv86m78r",
+  "cursor": 69,
+  "messages": [],
+  "olderCursor": null,
+  "botId": "cmvszdwc78u6vv3oe3x2syi1b",
+  "run": null,
+  "activeRuns": [],
+  "computer": {
+    "botId": "cmvszdwc78u6vv3oe3x2syi1b",
+    "mode": "team",
+    "kind": "docker",
+    "state": "stopped",
+    "controlHolder": "none",
+    "controlBotId": null,
+    "takeoverRequested": false,
+    "screenAvailable": false,
+    "screenWidth": 1280,
+    "screenHeight": 800,
+    "homeRevision": "empty",
+    "busyBotName": null,
+    "canUpdate": true,
+    "terminalAvailable": true
+  }
+}

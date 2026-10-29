@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ServerEye · Monitor</title>
+<link rel="stylesheet" href="/static/serverEye.css">
+<style>
+  .wrap { padding: 22px 28px 60px; display: grid; gap: 18px; grid-template-columns: repeat(12, 1fr); }
+  .panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 18px; min-width: 0; animation: rise .45s both; }
+  .panel h3 { margin: 0 0 12px; display: flex; align-items: center; gap: 10px; }
+  .panel h3 .kicker { color: var(--ink-2); }
+  .panel h3 .right { margin-left: auto; }
+  .w12 { grid-column: span 12; } .w8 { grid-column: span 8; } .w7 { grid-column: span 7; } .w5 { grid-column: span 5; } .w4 { grid-column: span 4; }
+  @media (max-width: 1100px) { .w8, .w7, .w5, .w4 { grid-column: span 12; } }
+
+  /* verdict banner */
+  .verdict { display: flex; align-items: center; gap: 22px; padding: 18px 22px; }
+  .lamp { width: 56px; height: 56px; border-radius: 50%; flex: none; background: radial-gradient(circle at 35% 30%, #fff8, transparent 45%), currentColor; box-shadow: 0 0 28px currentColor, inset 0 0 12px #0006; }
+  .verdict .big { font-family: var(--mono); font-size: 30px; font-weight: 600; letter-spacing: 2px; }
+  .verdict .why { color: var(--ink-2); max-width: 720px; }
+  .anoms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .hostfacts { margin-left: auto; display: grid; grid-template-columns: auto auto; gap: 3px 16px; font-family: var(--mono); font-size: 12px; text-align: right; }
+  .hostfacts span:nth-child(odd) { color: var(--ink-3); }
+  .verdict .crit .lamp, .verdict.crit .lamp { animation: pulse 1.2s infinite; }
+
+  /* daemons */
+  .daemons { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .daemon { border: 1px solid var(--rule); border-radius: 6px; padding: 10px 12px; background: var(--panel-2); display: flex; align-items: center; gap: 10px; }
+  .daemon .led { width: 10px; height: 10px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; flex: none; }
+  .daemon b { font-family: var(--mono); font-weight: 500; }
+  .daemon small { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); }
+  .daemon .btn { margin-left: auto; }
+
+  /* features */
+  .feat { display: grid; grid-template-columns: 210px 1fr 120px; gap: 14px; align-items: center; padding: 11px 0; border-top: 1px solid var(--rule); }
+  .feat:first-of-type { border-top: 0; }
+  .feat .name { font-family: var(--mono); font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+  .feat .name small { display: block; color: var(--ink-3); font-weight: 400; font-size: 11px; }
+  .seats { display: flex; gap: 3px; flex-wrap: wrap; }
+  .seat { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--ink-3); position: relative; }
+  .seat.on { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(111,207,151,.5); }
+  .seat.over { background: var(--crit); border-color: var(--crit); }
+  .seatnum { font-family: var(--mono); font-size: 11px; color: var(--ink-2); margin-top: 4px; }
+  .expiry { text-align: right; font-family: var(--mono); }
+  .expiry b { font-size: 22px; font-weight: 500; display: block; line-height: 1.05; }
+  .expiry small { color: var(--ink-3); font-size: 11px; }
+  .flag { font-family: var(--mono); font-size: 10.5px; color: var(--warn); margin-top: 4px; }
+
+  /* bars */
+  .bar { height: 8px; background: var(--panel-2); border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .disk { display: grid; grid-template-columns: 90px 1fr 120px; gap: 12px; align-items: center; padding: 7px 0; font-family: var(--mono); font-size: 12px; }
+  .disk .r { text-align: right; color: var(--ink-2); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { text-align: left; font-family: var(--mono); font-weight: 500; font-size: 10.5px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--ink-3); padding: 0 6px 6px; border-bottom: 1px solid var(--rule); }
+  td { padding: 7px 6px; border-bottom: 1px solid var(--rule); font-family: var(--mono); }
+  tr:last-child td { border-bottom: 0; }
+
+  /* inbox */
+  .inbox { display: grid; gap: 10px; max-height: 560px; overflow: auto; padding-right: 4px; }
+  .note { border: 1px solid var(--rule); border-left: 3px solid var(--ink-3); border-radius: 0 6px 6px 0; padding: 10px 12px; background: var(--panel-2); }
+  .note.fresh { animation: rise .35s both; }
+  .note.from-monitor { border-left-color: var(--c-monitor); }
+  .note.from-license { border-left-color: var(--c-licensekeeper); }
+  .note.crit { border-left-color: var(--crit); }
+  .note .meta { display: flex; gap: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); margin-bottom: 5px; }
+  .note .meta b { color: var(--ink-2); font-weight: 500; }
+  .note pre { margin: 0; white-space: pre-wrap; font-family: var(--sans); font-size: 13px; }
+  .empty { color: var(--ink-3); font-family: var(--mono); font-size: 12px; padding: 4px 0; }
+  .checks { display: grid; gap: 6px; }
+  .check { display: grid; grid-template-columns: 76px 78px 1fr; gap: 8px; font-family: var(--mono); font-size: 11.5px; align-items: center; }
+</style>
+</head>
+<body class="scope">
+<header class="topbar">
+  <a class="brand" href="/monitor"><i class="eye"></i><b>ServerEye</b><span>monitor · admin</span></a>
+  <nav class="nav" id="nav"></nav>
+  <div class="spacer"></div>
+  <span class="kicker" id="updated"></span>
+  <button class="btn primary" id="runCheck">Run health check (A2A)</button>
+</header>
+
+<main class="wrap">
+  <section class="panel w12 verdict" id="verdict"></section>
+
+  <section class="panel w12">
+    <h3><span class="kicker">License server · lmgrd + vendor daemons</span></h3>
+    <div class="daemons" id="daemons"></div>
+  </section>
+
+  <section class="panel w7">
+    <h3><span class="kicker">Features served · seats & expiry</span><span class="right faint mono" id="featCount"></span></h3>
+    <div id="features"></div>
+  </section>
+
+  <section class="panel w5">
+    <h3><span class="kicker">Admin inbox</span><span class="right faint mono" id="inboxCount"></span></h3>
+    <div class="inbox" id="inbox"></div>
+  </section>
+
+  <section class="panel w4">
+    <h3><span class="kicker">Disk</span></h3>
+    <div id="disk"></div>
+    <h3 style="margin-top:18px"><span class="kicker">Installed tools</span></h3>
+    <table><tbody id="installed"></tbody></table>
+  </section>
+
+  <section class="panel w4">
+    <h3><span class="kicker">Jobs holding seats</span></h3>
+    <table><thead><tr><th>user</th><th>job</th><th>features</th></tr></thead><tbody id="jobs"></tbody></table>
+    <h3 style="margin-top:18px"><span class="kicker">Sudoers</span></h3>
+    <div class="mono" id="sudoers"></div>
+  </section>
+
+  <section class="panel w4">
+    <h3><span class="kicker">Requests in flight</span></h3>
+    <table><thead><tr><th>id</th><th>student</th><th>tool</th><th>status</th><th></th></tr></thead><tbody id="requests"></tbody></table>
+    <h3 style="margin-top:18px"><span class="kicker">Monitor checks (A2A)</span></h3>
+    <div class="checks" id="checks"></div>
+  </section>
+</main>
+
+<script type="module">
+import { $, esc, api, ago, clock, toast, poll, nav } from "/static/serverEye.js";
+$("#nav").innerHTML = nav("monitor");
+
+const SEV = { ok: "s-ok", warning: "s-warn", critical: "s-crit" };
+const REC = { ok: "No action needed", notify_admin: "Admin notified", admin_intervention_required: "Admin intervention required" };
+
+function verdict(v, host) {
+  const cls = SEV[v.status] || "";
+  const el = $("#verdict");
+  el.className = `panel w12 verdict ${v.status === "critical" ? "crit" : ""}`;
+  el.innerHTML = `
+    <i class="lamp ${cls}"></i>
+    <div>
+      <div class="kicker">Monitor verdict · rule-based · live preview</div>
+      <div class="big ${cls}">${v.status.toUpperCase()}</div>
+      <div class="why">${esc(REC[v.recommendation] || v.recommendation)} — ${esc(v.rationale)}</div>
+      <div class="anoms">${v.anomalies.map(a => `<span class="pill ${a.severity === "critical" ? "s-crit" : "s-warn"}" title="${esc(a.detail)}"><b>${a.code}</b> ${esc(a.detail)}</span>`).join("")}</div>
+    </div>
+    <div class="hostfacts">
+      <span>host</span><span>${esc(host.hostname)}</span>
+      <span>os</span><span>${esc(host.os)}</span>
+      <span>uptime</span><span>${host.uptime_days} d</span>
+      <span>load</span><span>${host.load.join(" ")}</span>
+      <span>maintenance</span><span>${host.maintenance ? "open" : "closed"}</span>
+    </div>`;
+}
+
+function daemons(list) {
+  $("#daemons").innerHTML = list.map(d => {
+    const up = d.status === "running";
+    return `<div class="daemon ${up ? "s-ok" : "s-crit"}"><i class="led"></i>
+      <div><b style="color:var(--ink)">${d.name}</b><small>${d.status}</small></div>
+      <button class="btn small" data-daemon="${d.name}" data-up="${up}">${up ? "stop" : "start"}</button></div>`;
+  }).join("");
+}
+
+function features(list) {
+  $("#featCount").textContent = `${list.length} features`;
+  $("#features").innerHTML = list.map(f => {
+    const seats = Array.from({ length: Math.max(f.total, f.in_use) }, (_, i) =>
+      `<i class="seat ${i < f.in_use ? (i >= f.total ? "over" : "on") : ""}"></i>`).join("");
+    const sev = f.days_left <= 7 ? "s-crit" : f.days_left <= 30 ? "s-warn" : "";
+    const down = f.daemon_status !== "running";
+    return `<div class="feat">
+      <div class="name">${esc(f.feature)}<small>${esc(f.vendor)} · ${esc(f.daemon)} · v${esc(f.version)}${down ? ` · <span class="s-crit">daemon ${esc(f.daemon_status)}</span>` : ""}</small></div>
+      <div><div class="seats" title="${esc(f.holders.join(", ") || "no holders")}">${seats}</div>
+        <div class="seatnum">${f.in_use}/${f.total} in use${f.holders.length ? " · " + esc(f.holders.join(", ")) : ""}</div>
+        ${f.file_differs ? `<div class="flag">file on disk differs from what the daemon serves — lmreread pending</div>` : ""}</div>
+      <div class="expiry ${sev}"><b>${f.days_left}d</b><small>${esc(f.expires)}</small></div>
+    </div>`;
+  }).join("");
+}
+
+let seenNotes = null;
+function inbox(list) {
+  const first = seenNotes === null;
+  seenNotes = seenNotes || new Set();
+  $("#inboxCount").textContent = `${list.length} messages`;
+  $("#inbox").innerHTML = list.length ? list.map(n => {
+    const who = n.from.startsWith("monitor") ? "Monitor" : n.from.startsWith("license") ? "LicenseKeeper" : n.from;
+    const cls = who === "Monitor" ? "from-monitor" : who === "LicenseKeeper" ? "from-license" : "";
+    const crit = /CRITICAL/.test(n.message) ? "crit" : "";
+    const fresh = !first && !seenNotes.has(n.id) ? "fresh" : "";
+    seenNotes.add(n.id);
+    return `<div class="note ${cls} ${crit} ${fresh}"><div class="meta"><b>${esc(who)}</b><span>#${n.id}</span><span>${clock(n.at)}</span><span>${ago(n.at)}</span></div><pre>${esc(n.message)}</pre></div>`;
+  }).join("") : `<div class="empty">No messages for the admin.</div>`;
+}
+
+let lastSig = "";
+function render(d) {
+  const sig = JSON.stringify({ ...d, checks: d.checks.map(c => c.at) });
+  if (sig === lastSig) { $("#updated").textContent = `updated ${new Date().toLocaleTimeString()}`; return; }
+  lastSig = sig;
+  verdict(d.verdict, d.host);
+  daemons(d.daemons);
+  features(d.features);
+  inbox(d.inbox);
+  $("#disk").innerHTML = d.disk.map(x => {
+    const color = x.pct > 85 ? "var(--crit)" : x.pct > 75 ? "var(--warn)" : "var(--accent)";
+    return `<div class="disk"><span>${esc(x.mount)}</span><div class="bar"><i style="width:${x.pct}%;background:${color}"></i></div><span class="r">${x.used_gb}/${x.total_gb} GB</span></div>`;
+  }).join("");
+  $("#installed").innerHTML = d.installed.map(i => `<tr><td>${esc(i.product)}</td><td class="faint">${esc(i.vendor)}</td><td>${esc(i.version)}</td></tr>`).join("");
+  $("#jobs").innerHTML = d.jobs.length ? d.jobs.map(j => `<tr><td>${esc(j.user)}</td><td class="faint">${j.id}</td><td>${esc(j.features.join(", "))}</td></tr>`).join("")
+    : `<tr><td colspan="3" class="faint">no jobs</td></tr>`;
+  $("#sudoers").innerHTML = d.sudoers.map(u => `<span class="pill ${u === "labadmin" ? "" : "s-crit"}" style="margin-right:6px">${esc(u)}</span>`).join("");
+  $("#requests").innerHTML = d.requests.length ? d.requests.map(r => `<tr><td>${r.id}</td><td>${esc(r.student)}</td><td>${esc(r.software)}</td>
+      <td class="${r.status === "awaiting_admin" ? "s-warn" : ""}">${esc(r.status)}</td>
+      <td>${r.status === "awaiting_admin" ? `<button class="btn small" data-approve="${r.id}">approve</button>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="faint">none</td></tr>`;
+  $("#checks").innerHTML = d.checks.length ? d.checks.map(c => `<div class="check"><span class="faint">${clock(c.at)}</span>
+      <span class="${SEV[c.status] || ""}">${esc(c.status)}</span><span class="faint">${esc(c.trigger || "")} ${esc((c.codes || []).join(" "))}</span></div>`).join("")
+    : `<div class="empty">No checks yet.</div>`;
+  $("#updated").textContent = `updated ${new Date().toLocaleTimeString()}`;
+}
+
+async function refresh() { render(await api("/api/monitor")); }
+
+document.addEventListener("click", async e => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  try {
+    if (t.dataset.daemon) {
+      const action = t.dataset.up === "true" ? "stop_daemon" : "start_daemon";
+      await api("/api/admin", { action, name: t.dataset.daemon });
+      toast(`${t.dataset.daemon} ${action === "stop_daemon" ? "stopped" : "started"} (admin action)`);
+    } else if (t.dataset.approve) {
+      await api("/api/admin", { action: "approve", request_id: t.dataset.approve });
+      toast(`${t.dataset.approve} approved by admin`);
+    } else if (t.id === "runCheck") {
+      t.disabled = true;
+      const v = await api("/api/monitor/check", {});
+      toast(`Monitor: ${v.status}${v.admin_notified ? " — admin notified" : ""}`, v.status === "critical");
+    } else return;
+    await refresh();
+  } catch (err) { toast(err.message, true); }
+  finally { t.disabled = false; }
+});
+
+poll(refresh, 2500);
+</script>
+</body>
+</html>

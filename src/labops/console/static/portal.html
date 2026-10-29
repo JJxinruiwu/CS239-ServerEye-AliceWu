@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ServerEye · EDA Lab Portal</title>
+<link rel="stylesheet" href="/static/serverEye.css">
+<style>
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 34px 28px 80px; }
+  .hello { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 30px; animation: rise .5s both; }
+  .hello h1 { font-family: var(--serif); font-weight: 400; font-size: 46px; line-height: 1; margin: 6px 0 8px; letter-spacing: -.5px; }
+  .hello h1 em { color: var(--accent); }
+  .who { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--rule); border-radius: 999px; padding: 6px 8px 6px 16px; }
+  .who select { border: 0; background: transparent; font-weight: 600; cursor: pointer; padding: 4px; }
+  .who .tag { font-family: var(--mono); font-size: 10.5px; color: var(--ink-3); border-left: 1px solid var(--rule); padding-left: 10px; }
+
+  .grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 26px; }
+  @media (max-width: 960px) { .grid { grid-template-columns: 1fr; } }
+
+  .card { background: var(--card); border: 1px solid var(--rule); border-radius: 10px; padding: 22px 24px; box-shadow: 0 1px 0 rgba(0,0,0,.03), 0 12px 30px -24px rgba(29,35,43,.35); animation: rise .5s both; }
+  .card + .card { margin-top: 22px; }
+  .card h2 { font-family: var(--serif); font-weight: 400; font-size: 26px; margin: 2px 0 14px; }
+  .card h2 small { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-left: 8px; letter-spacing: 1px; }
+
+  /* request form */
+  .form { display: grid; grid-template-columns: 1fr 160px; gap: 12px 14px; }
+  .form label { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--ink-3); margin-bottom: 5px; }
+  .form .full { grid-column: 1 / -1; }
+  .form select, .form textarea, .form input { width: 100%; border: 1px solid var(--rule); background: #fff; border-radius: var(--radius); padding: 9px 11px; }
+  .form textarea { min-height: 92px; resize: vertical; }
+  .form select:focus, .form textarea:focus, .form input:focus { outline: 2px solid rgba(31,95,139,.25); border-color: var(--accent); }
+  .hint { font-size: 12.5px; margin-top: 7px; min-height: 18px; }
+  .actions { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+
+  /* catalog */
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-family: var(--mono); font-weight: 500; font-size: 10.5px; letter-spacing: 1.3px; text-transform: uppercase; color: var(--ink-3); padding: 0 8px 8px; border-bottom: 1px solid var(--rule); }
+  td { padding: 9px 8px; border-bottom: 1px dashed var(--rule); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  td.prod { font-weight: 600; } td.prod small { display: block; font-weight: 400; color: var(--ink-3); font-size: 12px; }
+  .vendor { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .st { font-family: var(--mono); font-size: 11.5px; }
+
+  /* my requests */
+  .req { border-top: 1px solid var(--rule); padding: 14px 0; }
+  .req:first-of-type { border-top: 0; padding-top: 2px; }
+  .req-head { display: flex; align-items: baseline; gap: 10px; }
+  .req-head b { font-size: 15px; } .req-head .id { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+  .req-head .pill { margin-left: auto; }
+  .req p { margin: 6px 0 10px; color: var(--ink-2); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .track { display: flex; gap: 4px; }
+  .track span { flex: 1; height: 4px; border-radius: 2px; background: var(--rule); }
+  .track span.on { background: var(--accent); }
+  .track span.bad { background: #b8322a; }
+  .track span.hold { background: #c98a12; }
+  .track-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; color: var(--ink-3); margin-top: 4px; }
+
+  /* inbox */
+  .msg { padding: 12px 14px; border-left: 3px solid var(--accent); background: #fff; border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 10px; animation: rise .4s both; }
+  .msg .meta { font-family: var(--mono); font-size: 11px; color: var(--ink-3); margin-bottom: 4px; }
+  .empty { color: var(--ink-3); font-style: italic; font-family: var(--serif); font-size: 18px; padding: 6px 0; }
+  .note { font-size: 12px; color: var(--ink-3); margin-top: 18px; }
+</style>
+</head>
+<body class="paper">
+<header class="topbar">
+  <a class="brand" href="/portal"><i class="eye"></i><b>ServerEye</b><span>EDA lab portal</span></a>
+  <nav class="nav" id="nav"></nav>
+  <div class="spacer"></div>
+  <span class="kicker">eda-lab-01</span>
+</header>
+
+<main class="wrap">
+  <section class="hello">
+    <div>
+      <div class="kicker" id="course">—</div>
+      <h1>Hello, <em id="first">—</em>.</h1>
+      <div class="muted">Request EDA software for the lab server and follow your requests here.</div>
+    </div>
+    <label class="who"><span class="faint">Viewing as</span><select id="student"></select><span class="tag">demo · no login</span></label>
+  </section>
+
+  <div class="grid">
+    <div>
+      <section class="card">
+        <h2>Request software</h2>
+        <div class="form">
+          <div><label for="software">Tool</label><select id="software"></select></div>
+          <div><label for="version">Version</label><select id="version"></select></div>
+          <div class="full" id="otherBox" hidden><label for="other">Tool name</label><input id="other" placeholder="e.g. gpuburn-pro"></div>
+          <div class="full"><label for="text">Why do you need it?</label>
+            <textarea id="text" placeholder="Course or project, and anything the admin should know."></textarea></div>
+        </div>
+        <div class="hint" id="hint"></div>
+        <div class="actions"><button class="btn primary" id="submit">Submit request</button><span class="faint" id="submitNote"></span></div>
+      </section>
+
+      <section class="card" style="animation-delay:.08s">
+        <h2>Software on eda-lab-01 <small id="catCount"></small></h2>
+        <table>
+          <thead><tr><th>Tool</th><th>Vendor</th><th>Status</th><th>Installed</th></tr></thead>
+          <tbody id="catalog"></tbody>
+        </table>
+      </section>
+    </div>
+
+    <div>
+      <section class="card" style="animation-delay:.05s">
+        <h2>My requests <small id="reqCount"></small></h2>
+        <div id="requests"></div>
+      </section>
+      <section class="card" style="animation-delay:.12s">
+        <h2>Inbox</h2>
+        <div id="inbox"></div>
+        <div class="note">You only ever see your own requests and messages.</div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { $, esc, api, ago, toast, poll, nav } from "/static/serverEye.js";
+$("#nav").innerHTML = nav("portal");
+
+const STATUS = {
+  installed: ["Installed", "s-ok"], available: ["Available", ""], needs_license: ["No lab license", "s-warn"],
+};
+const REQ = {
+  pending: ["Submitted", ""], validated: ["Approved for install", ""], in_progress: ["Installing", ""],
+  fulfilled: ["Installed", "s-ok"], needs_info: ["Needs attention", "s-warn"], awaiting_admin: ["Waiting for admin", "s-warn"],
+  approved: ["Admin approved", ""], rejected: ["Rejected", "s-crit"],
+};
+const STEPS = ["pending", "validated", "in_progress", "fulfilled"];
+
+let me = localStorage.getItem("se.student") || "ben";
+let catalog = [];
+let lastSig = "";
+
+async function loadStudents() {
+  const { students } = await api("/api/portal/students");
+  $("#student").innerHTML = students.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  if (!students.some(s => s.id === me)) me = students[0].id;
+  $("#student").value = me;
+}
+
+function track(status) {
+  if (status === "rejected") return STEPS.map((_, i) => `<span class="${i === 0 ? "bad" : ""}"></span>`).join("");
+  if (status === "awaiting_admin" || status === "needs_info") return STEPS.map((_, i) => `<span class="${i === 0 ? "on" : i === 1 ? "hold" : ""}"></span>`).join("");
+  const at = Math.max(0, STEPS.indexOf(status === "approved" ? "validated" : status));
+  return STEPS.map((_, i) => `<span class="${i <= at ? "on" : ""}"></span>`).join("");
+}
+
+function render(d) {
+  const sig = JSON.stringify([d.requests, d.inbox, d.catalog.map(c => c.status + c.installed_version)]);
+  if (sig === lastSig) return;
+  lastSig = sig;
+  catalog = d.catalog;
+  $("#first").textContent = d.student.name.split(" ")[0];
+  $("#course").textContent = `${d.student.course} · ${d.student.advisor}`;
+
+  const cur = $("#software").value;
+  $("#software").innerHTML = catalog.map(c =>
+    `<option value="${c.product}">${esc(c.product)} — ${esc(c.vendor)}</option>`).join("") +
+    `<option value="__other">Something else…</option>`;
+  if (cur) $("#software").value = cur;
+  onPick();
+
+  $("#catCount").textContent = `${catalog.length} TOOLS`;
+  $("#catalog").innerHTML = catalog.map(c => {
+    const [label, cls] = STATUS[c.status];
+    return `<tr><td class="prod">${esc(c.product)}<small>${esc(c.notes)}</small></td>
+      <td class="vendor">${esc(c.vendor)}</td>
+      <td><span class="pill st ${cls}"><i class="dot"></i>${label}</span></td>
+      <td class="mono">${esc(c.installed_version || "—")}</td></tr>`;
+  }).join("");
+
+  $("#reqCount").textContent = d.requests.length ? `${d.requests.length} TOTAL` : "";
+  $("#requests").innerHTML = d.requests.length ? d.requests.map(r => {
+    const [label, cls] = REQ[r.status] || [r.status, ""];
+    return `<div class="req">
+      <div class="req-head"><b>${esc(r.software)}${r.version ? " " + esc(r.version) : ""}</b><span class="id">${r.id} · ${ago(r.submitted_at)}</span>
+        <span class="pill ${cls}"><i class="dot"></i>${label}</span></div>
+      <p>${esc(r.text)}</p>
+      <div class="track">${track(r.status)}</div>
+      <div class="track-labels"><span>submitted</span><span>checked</span><span>installing</span><span>done</span></div>
+    </div>`;
+  }).join("") : `<div class="empty">No requests yet.</div>`;
+
+  $("#inbox").innerHTML = d.inbox.length ? d.inbox.map(n =>
+    `<div class="msg"><div class="meta">ServerEye · ${ago(n.at)}</div>${esc(n.message)}</div>`).join("")
+    : `<div class="empty">Nothing here yet.</div>`;
+}
+
+function onPick() {
+  const v = $("#software").value;
+  const c = catalog.find(x => x.product === v);
+  const versions = c ? ["latest", ...c.versions.slice().reverse()] : ["—"];
+  const prev = $("#version").value;
+  $("#version").innerHTML = versions.map(x => `<option>${esc(x)}</option>`).join("");
+  if (versions.includes(prev)) $("#version").value = prev;
+  $("#version").disabled = !c;
+  const hint = $("#hint");
+  $("#otherBox").hidden = v !== "__other";
+  if (v === "__other") { hint.innerHTML = `<span class="s-warn">Not on the lab's catalog — the admin decides on exceptions.</span>`; return; }
+  if (!c) { hint.textContent = ""; return; }
+  hint.innerHTML = {
+    installed: `<span class="s-ok">Already installed (${esc(c.installed_version)}). Request a different version if you need one.</span>`,
+    available: c.feature ? `<span class="muted">Licensed tool (feature <code>${esc(c.feature)}</code>); the lab holds this license.</span>` : `<span class="muted">Open-source; no license needed.</span>`,
+    needs_license: `<span class="s-warn">The lab does not hold a license for this tool; the admin would have to obtain one.</span>`,
+  }[c.status];
+}
+
+$("#software").addEventListener("change", onPick);
+$("#student").addEventListener("change", e => { me = e.target.value; localStorage.setItem("se.student", me); lastSig = ""; refresh(); });
+
+$("#submit").addEventListener("click", async () => {
+  let software = $("#software").value, version = $("#version").value;
+  if (software === "__other") { software = $("#other").value.trim(); version = ""; }
+  if (version === "latest" || version === "—") version = "";
+  const text = $("#text").value.trim();
+  if (!software || !text) return toast("Pick a tool and say why you need it.", true);
+  $("#submit").disabled = true;
+  try {
+    const r = await api("/api/portal/requests", { student: me, software, version, text });
+    $("#text").value = ""; $("#other").value = "";
+    toast(`Submitted ${r.id}. Gatekeeper will pick it up.`);
+    lastSig = ""; await refresh();
+  } catch (e) { toast(e.message, true); }
+  finally { $("#submit").disabled = false; }
+});
+
+async function refresh() { render(await api(`/api/portal?student=${encodeURIComponent(me)}`)); }
+await loadStudents();
+poll(refresh, 2500);
+</script>
+</body>
+</html>
