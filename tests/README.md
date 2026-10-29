@@ -56,7 +56,7 @@ Named after the policy in `ServerEye/policy.md` each one exercises.
 
 | Test | What it checks |
 |---|---|
-| `test_policy_md_has_at_least_three_consecutively_numbered_policies` | `ServerEye/policy.md` has P1., P2., … without gaps |
+| `test_policy_md_has_at_least_three_consecutively_numbered_policies` | `ServerEye/policy.md` has `## P1.`, `## P2.`, … headings without gaps |
 | `test_every_scenario_references_existing_policies` | all five scenarios cite only existing P-ids and name known agents |
 | `test_scenario_setup_is_applied_to_a_fresh_state` | scenario 02's setup yields cara's DC request with the injection text stored as data and her email in the portal record |
 | `test_admin_steps_of_scenario_05_change_the_license_file` | the first admin step of 05 uploads a file whose expiry equals what the daemon serves (stale) |

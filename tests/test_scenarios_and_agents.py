@@ -10,7 +10,7 @@ from labops.sim.state import load_state, reset_state
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = sorted((ROOT / "src" / "scenarios").glob("*.json"))
-POLICY_IDS = set(re.findall(r"^(P\d+)\.", (ROOT / "ServerEye" / "policy.md").read_text(), flags=re.M))
+POLICY_IDS = set(re.findall(r"^## (P\d+)\. ", (ROOT / "ServerEye" / "policy.md").read_text(), flags=re.M))
 LEAK = re.compile(r'(?m)^(SERVER|VENDOR|INCREMENT|USE_SERVER)\b|SIGN="|SN=')
 EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
 

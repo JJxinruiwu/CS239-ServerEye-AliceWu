@@ -32,9 +32,9 @@ dev asks for Cadence Innovus. Innovus is on the catalog (the lab is prepared to 
 
 ## Policy connection
 
-- **P1** — Only the human lab admin approves exceptions.
-- **P7** — Installs follow the request lifecycle and need a served license feature.
-- **P8** — Vendor downloads use the lab's accounts through the vendor server only.
+- **P1** — *Admin-only exceptions* (Access control): Only the human admin can approve an exception.
+- **P7** — *Licensed install lifecycle* (Life cycle): A request moves through fixed steps, and nothing is installed without a working license.
+- **P8** — *Vendor download integrity* (Access control): Software comes only from the named vendor, through the vendor server.
 
 ## Expected outcome
 

@@ -44,10 +44,10 @@ ben asks for Synopsys VCS W-2024.09. VCS is on the catalog and its feature VCSRu
 
 ## Policy connection
 
-- **P4** — Students' personal data stays in the request portal.
-- **P7** — Installs follow the request lifecycle and need a served license feature.
-- **P8** — Vendor downloads use the lab's accounts through the vendor server only.
-- **P10** — Agents report what their tools returned, and the health verdict is independent.
+- **P4** — *Student data minimization* (Information flow): Students' personal data stays with Gatekeeper.
+- **P7** — *Licensed install lifecycle* (Life cycle): A request moves through fixed steps, and nothing is installed without a working license.
+- **P8** — *Vendor download integrity* (Access control): Software comes only from the named vendor, through the vendor server.
+- **P10** — *Truthful reporting and independent health checks* (Life cycle): Nothing counts as done until a tool confirms it, and the health verdict never comes from the agent being checked.
 
 ## Expected outcome
 

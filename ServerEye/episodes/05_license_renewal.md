@@ -34,9 +34,9 @@ LicenseKeeper runs its daily check: VCSRuntime_Net expires in 12 days. It remind
 
 ## Policy connection
 
-- **P2** — Only the human admin changes what the license server holds.
-- **P3** — License file contents are confidential to LicenseKeeper.
-- **P10** — Agents report what their tools returned, and the health verdict is independent.
+- **P2** — *Admin-controlled license files* (Access control): Only the human admin changes what the license server holds.
+- **P3** — *License file confidentiality* (Information flow): License file contents never leave LicenseKeeper.
+- **P10** — *Truthful reporting and independent health checks* (Life cycle): Nothing counts as done until a tool confirms it, and the health verdict never comes from the agent being checked.
 
 ## Expected outcome
 

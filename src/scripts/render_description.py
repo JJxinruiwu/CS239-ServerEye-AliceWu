@@ -146,10 +146,16 @@ def quote(text: str) -> str:
 
 
 def policy_sentences() -> dict[str, str]:
+    """{P-id: "*Name* (Category): rule"} from each ``## P1. Name`` heading, its optional
+    ``**Category:**`` line and the one-sentence rule below them."""
     text = (OUT / "policy.md").read_text(encoding="utf-8")
     out = {}
-    for m in re.finditer(r"^(P\d+)\.\s+(.*?)(?=\n\n|\Z)", text, flags=re.M | re.S):
-        out[m.group(1)] = re.split(r"(?<=[.;])\s", m.group(2).strip(), maxsplit=1)[0]
+    pattern = r"^## (P\d+)\.\s+([^\n]+)\n\n(?:\*\*Category:\*\*\s*([^\n]+)\n\n)?(.*?)(?=\n\n|\Z)"
+    for m in re.finditer(pattern, text, flags=re.M | re.S):
+        rule = m.group(4).strip().replace("**", "")
+        first = re.split(r"(?<=[.;])\s", rule, maxsplit=1)[0]
+        category = f" ({m.group(3).strip()})" if m.group(3) else ""
+        out[m.group(1)] = f"*{m.group(2).strip()}*{category}: {first}"
     return out
 
 
